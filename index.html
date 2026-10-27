@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NBA Live Center - 免费体育直播</title>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0f;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    min-height: 100vh;
+  }
+  header {
+    background: linear-gradient(90deg, #1a1a2e 0%, #16213e 100%);
+    padding: 16px 28px;
+    border-bottom: 1px solid #2a2a4a;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    background: linear-gradient(90deg, #e53e3e, #dd6b20);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  header .sub {
+    font-size: 12px;
+    color: #888;
+  }
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+  .section-title {
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #666;
+    font-weight: 600;
+    margin: 28px 0 16px;
+  }
+  .site-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .site-card {
+    background: #15151f;
+    border: 1px solid #25253a;
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    color: #fff;
+    display: block;
+  }
+  .site-card:hover {
+    border-color: #e53e3e;
+    transform: translateY(-2px);
+    background: #1a1a2e;
+  }
+  .site-card .icon {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+  .site-card .name {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .site-card .desc {
+    font-size: 12px;
+    color: #888;
+    line-height: 1.5;
+  }
+  .player-section {
+    background: #0d0d14;
+    border: 1px solid #25253a;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-top: 12px;
+  }
+  .player-header {
+    padding: 14px 18px;
+    background: #15151f;
+    border-bottom: 1px solid #25253a;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .player-header h3 {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .channel-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 12px 18px;
+    background: #12121a;
+    border-bottom: 1px solid #25253a;
+  }
+  .tab {
+    padding: 6px 14px;
+    border-radius: 6px;
+    background: #1e1e2e;
+    font-size: 12px;
+    cursor: pointer;
+    border: 1px solid #2a2a4a;
+    transition: all 0.15s;
+  }
+  .tab:hover { background: #2a2a4a; }
+  .tab.active {
+    background: #e53e3e;
+    border-color: #e53e3e;
+  }
+  .video-wrap {
+    background: #000;
+    aspect-ratio: 16/9;
+    position: relative;
+  }
+  video {
+    width: 100%;
+    height: 100%;
+    outline: none;
+  }
+  .loading, .error-box {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: #888;
+  }
+  .error-box { color: #e53e3e; display: none; }
+  .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid #2a2a4a;
+    border-top-color: #e53e3e;
+    border-radius: 50%;
+    margin: 0 auto 12px;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .tip {
+    padding: 12px 18px;
+    font-size: 12px;
+    color: #666;
+    background: #12121a;
+    border-top: 1px solid #25253a;
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-left: 6px;
+  }
+  .badge-hot { background: #e53e3e22; color: #e53e3e; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🏀 NBA Live Center</h1>
+  <div class="sub">免费体育直播聚合 · 打开即看</div>
+</header>
+
+<div class="container">
+
+  <div class="section-title">🔥 推荐直播站（点击直接跳转）</div>
+  <div class="site-grid">
+    <a class="site-card" href="https://streameasttop.com/" target="_blank">
+      <div class="icon" style="background:#e53e3e22;color:#e53e3e;">SE</div>
+      <div class="name">StreamEast <span class="badge badge-hot">热门</span></div>
+      <div class="desc">NBA/NFL/NHL/MLB/UFC 全覆盖，多线路切换，HD画质</div>
+    </a>
+    <a class="site-card" href="https://v3.sportsurge.io/" target="_blank">
+      <div class="icon" style="background:#1a73e822;color:#1a73e8;">SG</div>
+      <div class="name">Sportsurge</div>
+      <div class="desc">Reddit 官方替代品，聚合多源，赛事齐全</div>
+    </a>
+    <a class="site-card" href="https://streameast-v3-web.b-cdn.net/" target="_blank">
+      <div class="icon" style="background:#7c3aed22;color:#7c3aed;">SE</div>
+      <div class="name">StreamEast V3</div>
+      <div class="desc">备用镜像站，主站打不开时用这个</div>
+    </a>
+    <a class="site-card" href="https://v2-720pstream.s3.amazonaws.com/index.html" target="_blank">
+      <div class="icon" style="background:#f7b32b22;color:#f7b32b;">720</div>
+      <div class="name">720PStream</div>
+      <div class="desc">高清直播，NBA/NFL/UFC/拳击，界面简洁</div>
+    </a>
+    <a class="site-card" href="https://buffstream-io.mutawakkil.com/" target="_blank">
+      <div class="icon" style="background:#00d4aa22;color:#00d4aa;">BF</div>
+      <div class="name">Buffstream</div>
+      <div class="desc">老牌直播站，NBA/MMA/拳击/NFL，稳定可靠</div>
+    </a>
+    <a class="site-card" href="https://olympicstreams.io/" target="_blank">
+      <div class="icon" style="background:#2563eb22;color:#2563eb;">OS</div>
+      <div class="name">Olympic Streams</div>
+      <div class="desc">NBA/NHL/UFC/拳击直播，主客场双线路</div>
+    </a>
+  </div>
+
+  <div class="section-title">🎬 NBA 全场回放专区</div>
+  <div class="site-grid">
+    <a class="site-card" href="https://basketball-video.com/" target="_blank">
+      <div class="icon" style="background:#e53e3e22;color:#e53e3e;">BV</div>
+      <div class="name">Basketball Video</div>
+      <div class="desc">每日更新全场回放，HD画质，常规赛/季后赛都有</div>
+    </a>
+    <a class="site-card" href="https://basketballreplays.net/" target="_blank">
+      <div class="icon" style="background:#1a73e822;color:#1a73e8;">BR</div>
+      <div class="name">Basketball Replays</div>
+      <div class="desc">高清全场回放，季后赛/经典比赛，更新及时</div>
+    </a>
+    <a class="site-card" href="https://www.youtube.com/@nba" target="_blank">
+      <div class="icon" style="background:#ff000022;color:#ff0000;">YT</div>
+      <div class="name">NBA 官方 YouTube</div>
+      <div class="desc">官方集锦、高光时刻、赛后采访，完全免费合法</div>
+    </a>
+  </div>
+
+  <div class="section-title">📺 内置播放器（m3u8 源）</div>
+  <div class="player-section">
+    <div class="player-header">
+      <h3>体育频道直播</h3>
+      <span style="font-size:11px;color:#666;">需开启代理</span>
+    </div>
+    <div class="channel-tabs" id="tabs"></div>
+    <div class="video-wrap">
+      <video id="video" controls autoplay muted></video>
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div>正在加载直播流...</div>
+      </div>
+      <div class="error-box" id="error">
+        <div style="font-size:32px;margin-bottom:8px;">⚠️</div>
+        <div>无法加载该频道</div>
+      </div>
+    </div>
+    <div class="tip">
+      💡 提示：以上直播站为海外免费站点，建议配合 FlClash 代理使用。如遇广告弹窗，关闭即可，不影响观看。
+    </div>
+  </div>
+
+</div>
+
+<script>
+const channels = [
+  { name: "Sky Sports Action", url: "http://stream.bottledesk.net/p/AQNASgYGemc/index.m3u8" },
+  { name: "NBA TV", url: "https://tvpass.org/live/NBATV/sd" },
+  { name: "ESPN", url: "https://tvpass.org/live/ESPN/sd" },
+  { name: "TNT", url: "https://tvpass.org/live/TNTEast/sd" },
+  { name: "FS1", url: "https://tvpass.org/live/FoxSports1/sd" },
+];
+
+const video = document.getElementById('video');
+const loading = document.getElementById('loading');
+const errorBox = document.getElementById('error');
+const tabsEl = document.getElementById('tabs');
+let hls = null;
+
+const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+
+channels.forEach((ch, i) => {
+  const tab = document.createElement('div');
+  tab.className = 'tab' + (i === 0 ? ' active' : '');
+  tab.textContent = ch.name;
+  tab.onclick = () => play(i, tab);
+  tabsEl.appendChild(tab);
+});
+
+function play(index, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const ch = channels[index];
+  loading.style.display = 'block';
+  errorBox.style.display = 'none';
+
+  if (hls) { hls.destroy(); hls = null; }
+
+  let url = ch.url;
+  if (!ch.url.includes('bottledesk.net')) {
+    url = CORS_PROXY + encodeURIComponent(ch.url);
+  }
+
+  if (Hls.isSupported()) {
+    hls = new Hls({ maxBufferLength: 30, liveSyncDurationCount: 3 });
+    hls.loadSource(url);
+    hls.attachMedia(video);
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      video.play().catch(() => {});
+      loading.style.display = 'none';
+    });
+    hls.on(Hls.Events.ERROR, (_, data) => {
+      if (data.fatal) {
+        loading.style.display = 'none';
+        errorBox.style.display = 'block';
+      }
+    });
+  }
+}
+
+play(0, document.querySelector('.tab'));
+</script>
+
+</body>
+</html>
