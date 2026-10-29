@@ -103,10 +103,32 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
   }
   .player-header h3 {
     font-size: 14px;
     font-weight: 600;
+  }
+  .group-tabs {
+    display: flex;
+    gap: 6px;
+    padding: 10px 18px 0;
+    background: #12121a;
+  }
+  .group-tab {
+    padding: 8px 16px;
+    border-radius: 8px 8px 0 0;
+    background: #1e1e2e;
+    font-size: 13px;
+    cursor: pointer;
+    border: 1px solid #2a2a4a;
+    border-bottom: none;
+    transition: all 0.15s;
+  }
+  .group-tab.active {
+    background: #e53e3e;
+    border-color: #e53e3e;
   }
   .channel-tabs {
     display: flex;
@@ -163,6 +185,7 @@
     color: #666;
     background: #12121a;
     border-top: 1px solid #25253a;
+    line-height: 1.7;
   }
   .badge {
     display: inline-block;
@@ -179,12 +202,12 @@
 
 <header>
   <h1>🏀 NBA Live Center</h1>
-  <div class="sub">免费体育直播聚合 · 打开即看</div>
+  <div class="sub">免费体育直播聚合 · 国内/海外双源</div>
 </header>
 
 <div class="container">
 
-  <div class="section-title">🔥 推荐直播站（点击直接跳转）</div>
+  <div class="section-title">🔥 海外直播站（需梯子）</div>
   <div class="site-grid">
     <a class="site-card" href="https://streameasttop.com/" target="_blank">
       <div class="icon" style="background:#e53e3e22;color:#e53e3e;">SE</div>
@@ -218,6 +241,25 @@
     </a>
   </div>
 
+  <div class="section-title">🇨🇳 国内免费观赛（无需梯子）</div>
+  <div class="site-grid">
+    <a class="site-card" href="https://tv.cctv.com/live/cctv5/" target="_blank">
+      <div class="icon" style="background:#ff000022;color:#ff0000;">C5</div>
+      <div class="name">CCTV5 官网直播</div>
+      <div class="desc">央视体育频道官网，NBA/足球/田径直播免费看</div>
+    </a>
+    <a class="site-card" href="https://tv.cctv.com/live/cctv5plus/" target="_blank">
+      <div class="icon" style="background:#ff000022;color:#ff0000;">C5+</div>
+      <div class="name">CCTV5+ 官网直播</div>
+      <div class="desc">央视体育赛事频道，NBA转播场次免费看</div>
+    </a>
+    <a class="site-card" href="https://yangshipin.cn/" target="_blank">
+      <div class="icon" style="background:#0066ff22;color:#0066ff;">央</div>
+      <div class="name">央视频 App</div>
+      <div class="desc">央视官方 App，CCTV5 高清直播，手机直接看</div>
+    </a>
+  </div>
+
   <div class="section-title">🎬 NBA 全场回放专区</div>
   <div class="site-grid">
     <a class="site-card" href="https://basketball-video.com/" target="_blank">
@@ -237,73 +279,164 @@
     </a>
   </div>
 
-  <div class="section-title">📺 内置播放器（m3u8 源）</div>
+  <div class="section-title">📺 内置播放器（多源自动切换）</div>
   <div class="player-section">
     <div class="player-header">
       <h3>体育频道直播</h3>
-      <span style="font-size:11px;color:#666;">需开启代理</span>
+      <span style="font-size:11px;color:#666;">国内源直连 · 海外源需梯子</span>
+    </div>
+    <div class="group-tabs" id="group-tabs">
+      <div class="group-tab active" data-g="cn">🇨🇳 国内源</div>
+      <div class="group-tab" data-g="ov">🌐 海外源</div>
     </div>
     <div class="channel-tabs" id="tabs"></div>
     <div class="video-wrap">
       <video id="video" controls autoplay muted></video>
       <div class="loading" id="loading">
         <div class="spinner"></div>
-        <div>正在加载直播流...</div>
+        <div id="loading-text">正在加载直播流...</div>
       </div>
       <div class="error-box" id="error">
         <div style="font-size:32px;margin-bottom:8px;">⚠️</div>
-        <div>无法加载该频道</div>
+        <div>所有线路都尝试过了，无法播放</div>
       </div>
     </div>
     <div class="tip">
-      💡 提示：以上直播站为海外免费站点，建议配合 FlClash 代理使用。如遇广告弹窗，关闭即可，不影响观看。
+      💡 国内源：央视 CCTV5/CCTV5+ 等，回国直连就能看，无需任何代理。<br>
+      💡 海外源：StreamEast 等直播站 + m3u8 频道，需挂梯子（FlClash 等）。<br>
+      💡 每个频道内置多个备用线路，一个失效会自动切换下一个。
     </div>
   </div>
 
 </div>
 
 <script>
-const channels = [
-  { name: "Sky Sports Action", url: "http://stream.bottledesk.net/p/AQNASgYGemc/index.m3u8" },
-  { name: "NBA TV", url: "https://tvpass.org/live/NBATV/sd" },
-  { name: "ESPN", url: "https://tvpass.org/live/ESPN/sd" },
-  { name: "TNT", url: "https://tvpass.org/live/TNTEast/sd" },
-  { name: "FS1", url: "https://tvpass.org/live/FoxSports1/sd" },
-];
+// 频道定义：每个频道可配多个源，播放时逐个尝试
+const groups = {
+  cn: [
+    {
+      name: "CCTV5 央视体育",
+      sources: [
+        "http://183.11.239.36:808/hls/93/index.m3u8",
+        "http://113.15.109.216:59901/tsfile/live/0005_1.m3u8?key=txiptv&playlive=1&authid=0",
+        "http://183.250.156.180:9999/newlive/live/hls/5/live.m3u8"
+      ]
+    },
+    {
+      name: "CCTV5+ 体育赛事",
+      sources: [
+        "http://120.76.248.139/live/bfgd/4200000246.m3u8",
+        "http://183.250.156.180:9999/newlive/live/hls/6/live.m3u8",
+        "http://45.192.97.170:8880/play/6.m3u8"
+      ]
+    },
+    {
+      name: "五星体育",
+      sources: [
+        "http://38.75.136.137:98/gslb/dsdqpub/wxtyhd.m3u8?auth=testpub"
+      ]
+    },
+    {
+      name: "广东体育",
+      sources: [
+        "http://38.75.136.137:98/gslb/dsdqpub/gdty.m3u8?auth=testpub"
+      ]
+    }
+  ],
+  ov: [
+    {
+      name: "Sky Sports Action",
+      sources: [
+        "http://stream.bottledesk.net/p/AQNASgYGemc/index.m3u8"
+      ]
+    },
+    {
+      name: "NBA TV",
+      sources: [
+        "https://tvpass.org/live/NBATV/sd"
+      ]
+    },
+    {
+      name: "ESPN",
+      sources: [
+        "https://tvpass.org/live/ESPN/sd"
+      ]
+    },
+    {
+      name: "TNT",
+      sources: [
+        "https://tvpass.org/live/TNTEast/sd"
+      ]
+    }
+  ]
+};
 
 const video = document.getElementById('video');
 const loading = document.getElementById('loading');
+const loadingText = document.getElementById('loading-text');
 const errorBox = document.getElementById('error');
 const tabsEl = document.getElementById('tabs');
+const groupTabsEl = document.getElementById('group-tabs');
 let hls = null;
+let currentGroup = 'cn';
+let currentChannel = 0;
+let tryIndex = 0;
 
 const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 
-channels.forEach((ch, i) => {
-  const tab = document.createElement('div');
-  tab.className = 'tab' + (i === 0 ? ' active' : '');
-  tab.textContent = ch.name;
-  tab.onclick = () => play(i, tab);
-  tabsEl.appendChild(tab);
+function renderTabs() {
+  tabsEl.innerHTML = '';
+  groups[currentGroup].forEach((ch, i) => {
+    const tab = document.createElement('div');
+    tab.className = 'tab' + (i === currentChannel ? ' active' : '');
+    tab.textContent = ch.name;
+    tab.onclick = () => { currentChannel = i; renderTabs(); play(); };
+    tabsEl.appendChild(tab);
+  });
+}
+
+groupTabsEl.querySelectorAll('.group-tab').forEach(gt => {
+  gt.onclick = () => {
+    groupTabsEl.querySelectorAll('.group-tab').forEach(t => t.classList.remove('active'));
+    gt.classList.add('active');
+    currentGroup = gt.dataset.g;
+    currentChannel = 0;
+    renderTabs();
+    play();
+  };
 });
 
-function play(index, el) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-  const ch = channels[index];
-  loading.style.display = 'block';
+function play() {
+  tryIndex = 0;
   errorBox.style.display = 'none';
+  trySource();
+}
+
+function trySource() {
+  const ch = groups[currentGroup][currentChannel];
+  const sources = ch.sources;
+
+  if (tryIndex >= sources.length) {
+    loading.style.display = 'none';
+    errorBox.style.display = 'block';
+    return;
+  }
+
+  const url = sources[tryIndex];
+  loading.style.display = 'block';
+  loadingText.textContent = `正在尝试线路 ${tryIndex + 1}/${sources.length} ...`;
 
   if (hls) { hls.destroy(); hls = null; }
 
-  let url = ch.url;
-  if (!ch.url.includes('bottledesk.net')) {
-    url = CORS_PROXY + encodeURIComponent(ch.url);
+  let finalUrl = url;
+  // 海外源（非 bottledesk）走 CORS 代理
+  if (currentGroup === 'ov' && !url.includes('bottledesk.net')) {
+    finalUrl = CORS_PROXY + encodeURIComponent(url);
   }
 
   if (Hls.isSupported()) {
-    hls = new Hls({ maxBufferLength: 30, liveSyncDurationCount: 3 });
-    hls.loadSource(url);
+    hls = new Hls({ maxBufferLength: 30, liveSyncDurationCount: 3, manifestLoadingMaxRetry: 1, levelLoadingMaxRetry: 1 });
+    hls.loadSource(finalUrl);
     hls.attachMedia(video);
     hls.on(Hls.Events.MANIFEST_PARSED, () => {
       video.play().catch(() => {});
@@ -311,14 +444,28 @@ function play(index, el) {
     });
     hls.on(Hls.Events.ERROR, (_, data) => {
       if (data.fatal) {
-        loading.style.display = 'none';
-        errorBox.style.display = 'block';
+        tryIndex++;
+        setTimeout(trySource, 300);
       }
     });
+  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    video.src = finalUrl;
+    video.addEventListener('loadedmetadata', () => {
+      video.play().catch(() => {});
+      loading.style.display = 'none';
+    });
+    video.addEventListener('error', () => {
+      tryIndex++;
+      setTimeout(trySource, 300);
+    });
+  } else {
+    loading.style.display = 'none';
+    errorBox.style.display = 'block';
   }
 }
 
-play(0, document.querySelector('.tab'));
+renderTabs();
+play();
 </script>
 
 </body>
